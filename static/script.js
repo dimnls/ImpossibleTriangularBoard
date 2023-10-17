@@ -16,6 +16,8 @@ async function getInitialMessage() {
 
     // Add assistant's initial message to the conversation history
     conversation_history.push({role: "assistant", content: responseData.response});
+    // Auto-scroll to the bottom
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 async function sendMessage() {
     const userInput = document.getElementById('user-input').value;
@@ -56,6 +58,8 @@ async function sendMessage() {
         }
     }
     typeCharacter();
+    // Auto-scroll to the bottom
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 // Call the function when the page loads

@@ -17,7 +17,17 @@ def home():
 
 @app.route('/initial_message', methods=['GET'])
 def get_initial_message():
-    return jsonify({'response': initial_system_message})
+    # Prepare the prompt for OpenAI with the system message
+    prompt = [{'role': 'system', 'content': initial_system_message}]
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Change this to your desired model
+            messages=prompt)
+        generated_text = response['choices'][0]['message']['content']
+        return jsonify({'response': generated_text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/generate', methods=['POST'])
 def generate_response():

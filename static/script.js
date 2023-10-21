@@ -1,11 +1,7 @@
 let conversation_history = [{ role: "system", content: "" }];
-async function getInitialMessage() {
-    const response = await fetch('/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: '', conversation_history })
-    });
 
+async function getInitialMessage() {
+    const response = await fetch('/initial_message');
     const responseData = await response.json();
 
     const chatBox = document.getElementById('chat-box');
@@ -19,6 +15,7 @@ async function getInitialMessage() {
     // Auto-scroll to the bottom
     chatBox.scrollTop = chatBox.scrollHeight;
 }
+
 async function sendMessage() {
     const userInput = document.getElementById('user-input').value;
     document.getElementById('user-input').value = '';  // Clear the input field
@@ -33,33 +30,70 @@ async function sendMessage() {
     // Add user's message to the conversation history
     conversation_history.push({role: "user", content: userInput});
 
-    // Send user input to server and get response
-    const response = await fetch('/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: userInput, conversation_history })
-    });
+    try {
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input: userInput, conversation_history })
+        });
 
-    const responseData = await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
-    // Add assistant's reply to the conversation history
-    conversation_history.push({role: "assistant", content: responseData.response});
+        const responseData = await response.json();
+        if (responseData && responseData.question) {
+            typeQuestion(responseData.response);
+        } else {
+            console.error('Unexpected responseData structure:', responseData);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+    }
+}
 
-    // Append bot response to chat box one character at a time
+function typeQuestion(responseData) {
+    const chatBox = document.getElementById('chat-box');
     const botMessageDiv = document.createElement('div');
     botMessageDiv.className = 'message bot';
     chatBox.appendChild(botMessageDiv);
     let i = 0;
-    function typeCharacter() {
-        if (i < responseData.response.length) {
-            botMessageDiv.textContent += responseData.response.charAt(i);
-            i++;
-            setTimeout(typeCharacter, 20);  // Adjust this value to change the typing speed
+
+    // Adjusting to the new structure of responseData
+    const botResponse = responseData.response;
+
+    if (botResponse && botResponse.question) {
+        function typeCharacter() {
+            if (i < botResponse.question.length) {
+                botMessageDiv.textContent += botResponse.question.charAt(i);
+                i++;
+                setTimeout(typeCharacter, 20);  // Adjust this value to change the typing speed
+            } else {
+                if (botResponse.options && Array.isArray(botResponse.options)) {
+                    botResponse.options.forEach(option => {
+                        const key = Object.keys(option)[0];
+                        const value = option[key];
+                        const optionButton = document.createElement('button');
+                        optionButton.textContent = value;
+                        optionButton.className = 'option-button';
+                        optionButton.onclick = () => sendOption(key);
+                        chatBox.appendChild(optionButton);
+                    });
+                } else {
+                    console.error('Unexpected botResponse structure:', botResponse);
+                }
+            }
         }
+        typeCharacter();
+    } else {
+        console.error('Unexpected responseData structure:', responseData);
     }
-    typeCharacter();
-    // Auto-scroll to the bottom
-    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendOption(optionKey) {
+    const optionText = optionKey;
+    document.getElementById('user-input').value = optionText;  // Set the option text as user input
+    sendMessage();  // Send the option text as a message
 }
 
 // Call the function when the page loads

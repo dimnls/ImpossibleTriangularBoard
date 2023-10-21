@@ -1,7 +1,6 @@
 import openai
 from flask import Flask, request, jsonify, render_template
 import os
-import json  # Import the json module
 
 app = Flask(__name__, static_folder="static")
 
@@ -20,9 +19,6 @@ def home():
 def get_initial_message():
     return jsonify({'response': initial_system_message})
 
-# Initialize the conversation history with the initial system message
-conversation_history = [{"role": "system", "content": initial_system_message}]
-
 @app.route('/generate', methods=['POST'])
 def generate_response():
     user_input = request.json.get('input', '')
@@ -36,27 +32,18 @@ def generate_response():
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=prompt
-        )
+            model="gpt-3.5-turbo",  # Change this to your desired model
+            messages=prompt)
         generated_text = response['choices'][0]['message']['content']
-
-        # Append assistant's reply to conversation history as a string
+        # Add assistant's reply to the conversation history
         conversation_history.append({
             "role": "assistant",
-            "content": generated_text  # Now generated_text is a string
+            "content": generated_text
         })
-
-        # Parse the generated_text to send structured data to the frontend
-        response_data = {
-            "response": generated_text
-        }
-
         return jsonify({
-            'response': response_data,
+            'response': generated_text,
             'conversation_history': conversation_history
         })
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

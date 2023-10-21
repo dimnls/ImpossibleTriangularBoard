@@ -1,5 +1,6 @@
 let conversation_history = [{ role: "system", content: "" }];
 
+// Function to fetch the initial message from the bot
 async function getInitialMessage() {
     const response = await fetch('/initial_message');
     const responseData = await response.json();
@@ -11,11 +12,13 @@ async function getInitialMessage() {
     chatBox.appendChild(botMessageDiv);
 
     // Add assistant's initial message to the conversation history
-    conversation_history.push({role: "assistant", content: responseData.response});
+    conversation_history.push({ role: "assistant", content: responseData.response });
+
     // Auto-scroll to the bottom
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// Function to send the user's message and get the bot's response
 async function sendMessage() {
     const userInput = document.getElementById('user-input').value;
     document.getElementById('user-input').value = '';  // Clear the input field
@@ -28,73 +31,50 @@ async function sendMessage() {
     chatBox.appendChild(userMessageDiv);
 
     // Add user's message to the conversation history
-    conversation_history.push({role: "user", content: userInput});
+    conversation_history.push({ role: "user", content: userInput });
 
-    try {
-        const response = await fetch('/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ input: userInput, conversation_history })
-        });
+    // Send user input to server and get response
+    const response = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: userInput, conversation_history })
+    });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+    const responseData = await response.json();
 
-        const responseData = await response.json();
-        if (responseData && responseData.question) {
-            typeQuestion(responseData.response);
-        } else {
-            console.error('Unexpected responseData structure:', responseData);
-        }
-    } catch (error) {
-        console.error('Error sending message:', error);
-    }
-}
+    // Add assistant's reply to the conversation history
+    conversation_history.push({ role: "assistant", content: responseData.response });
 
-function typeQuestion(responseData) {
-    const chatBox = document.getElementById('chat-box');
+    // Append bot response to chat box with typing effect
     const botMessageDiv = document.createElement('div');
     botMessageDiv.className = 'message bot';
     chatBox.appendChild(botMessageDiv);
+    typeMessage(responseData.response, botMessageDiv);
+
+    // Auto-scroll to the bottom
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Function to simulate typing effect for bot's response
+function typeMessage(message, element) {
     let i = 0;
-
-    // Adjusting to the new structure of responseData
-    const botResponse = responseData.response;
-
-    if (botResponse && botResponse.question) {
-        function typeCharacter() {
-            if (i < botResponse.question.length) {
-                botMessageDiv.textContent += botResponse.question.charAt(i);
-                i++;
-                setTimeout(typeCharacter, 20);  // Adjust this value to change the typing speed
-            } else {
-                if (botResponse.options && Array.isArray(botResponse.options)) {
-                    botResponse.options.forEach(option => {
-                        const key = Object.keys(option)[0];
-                        const value = option[key];
-                        const optionButton = document.createElement('button');
-                        optionButton.textContent = value;
-                        optionButton.className = 'option-button';
-                        optionButton.onclick = () => sendOption(key);
-                        chatBox.appendChild(optionButton);
-                    });
-                } else {
-                    console.error('Unexpected botResponse structure:', botResponse);
-                }
-            }
+    const typingInterval = setInterval(() => {
+        if (i < message.length) {
+            element.textContent += message.charAt(i);
+            i++;
+        } else {
+            clearInterval(typingInterval);
         }
-        typeCharacter();
-    } else {
-        console.error('Unexpected responseData structure:', responseData);
-    }
+    }, 20);  // Adjust this value to change typing speed
 }
 
-async function sendOption(optionKey) {
-    const optionText = optionKey;
-    document.getElementById('user-input').value = optionText;  // Set the option text as user input
-    sendMessage();  // Send the option text as a message
-}
+// Function to handle the Enter key press in the input field
+document.getElementById('user-input').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+        event.preventDefault();  // Prevent the default action (newline in the input field)
+        sendMessage();
+    }
+});
 
 // Call the function when the page loads
 window.onload = getInitialMessage;

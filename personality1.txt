@@ -16,14 +16,6 @@ B. Option B
 etc. (if and when applicable)
 For example, if your reply is
 "Great! Comedies are always a good choice to lighten up the mood. Now, could you please tell me what type of comedy you prefer? Do you enjoy slapstick humor, romantic comedies, dark comedies, or something else?"
-you should format it as follows before you send it to me:
-- Confidence level: xx% showing the current confidence level (it starts at 0, tops at 100).
-Great! Comedies are always a good choice to lighten up the mood. Now, could you please tell me what type of comedy you prefer? Do you enjoy slapstick humor, romantic comedies, dark comedies, or something else? | 
-A. Splastick humor
-B. Romantic comedies
-C. Dark comedies
-D. Something else
-
 
 since the right movie depends on the right moment, you might consider trying to understand my state of mind and what I would love, without me being able to directly express it 
 
